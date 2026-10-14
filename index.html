@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora Linear</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f5f6f8;--card:#fff;--tx:#1b2430;--mut:#667085;--bd:#d9dee6;--in:#fff4cc;--inb:#e6c200;--out:#e3effb;--key:#1f4e78;--ok:#1a7f37;--bad:#c62828}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#14181f;--card:#1d232d;--tx:#e8ecf2;--mut:#9aa5b5;--bd:#344052;--in:#4a3f12;--inb:#a88f00;--out:#1c3350;--key:#4d8fd1}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#14181f;--card:#1d232d;--tx:#e8ecf2;--mut:#9aa5b5;--bd:#344052;--in:#4a3f12;--inb:#a88f00;--out:#1c3350;--key:#4d8fd1}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:1280px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}.sub{color:var(--mut);margin:2px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{flex:1}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:7px 12px;cursor:pointer}
+button.pri{background:var(--key);border-color:var(--key);color:#fff;font-weight:600}
+button:hover{filter:brightness(.95)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:1100px}
+th,td{border:1px solid var(--bd);padding:3px;text-align:right;white-space:nowrap}
+th{font-size:12px;padding:6px 4px;text-align:center;color:var(--tx)}
+th.i{background:var(--in);border-bottom:2px solid var(--inb)}th.o{background:var(--out)}th.k{background:var(--key);color:#fff}
+td.o{background:var(--out);padding:3px 8px}td.k{font-weight:700}
+td input{width:100%;min-width:60px;box-sizing:border-box;border:1px solid transparent;background:var(--in);color:var(--tx);padding:5px;font:inherit;border-radius:4px;text-align:right}
+td input.t{text-align:left}td input:focus{outline:2px solid var(--key)}
+tfoot td{font-weight:700;background:var(--out)}
+.neg{color:var(--bad)}.leg span{display:inline-block;padding:2px 8px;border-radius:5px;margin-right:6px;font-size:12px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:10px}
+.pgrid label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+.pgrid input{padding:6px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx);font:inherit}
+.msg{color:var(--bad);font-size:12px}.note{color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Calculadora Linear</h1>
+<p class="sub">Preencha as colunas amarelas. O resto é calculado automaticamente.</p>
+
+<div class="card">
+  <div class="bar">
+    <div class="leg"><span style="background:var(--in)">Preencher</span><span style="background:var(--out)">Automático</span><span style="background:var(--key);color:#fff">Resultado-chave</span></div>
+    <div class="sp"></div>
+    <button id="add">+ Adicionar produto</button>
+    <button id="clr">Limpar tudo</button>
+    <button id="dl" class="pri">Baixar planilha (.xlsx)</button>
+  </div>
+  <div class="wrap" style="margin-top:10px">
+    <table>
+      <thead><tr>
+        <th class="i">Código</th><th class="i">NF</th><th class="i">NCM</th><th class="i">Frete (R$/un.)</th><th class="i">Valor do produto (R$)</th>
+        <th class="i">IPI %</th><th class="i">ICMS compra %</th><th class="i">MVA original %</th><th class="i">Quant.</th><th class="i" title="Opcional. Vazio = usa o padrão dos Parâmetros (exato)">Arredondar casas (opcional)</th>
+        <th class="k">Preço de venda</th><th class="k">Valor total venda</th><th class="k">Margem contrib.</th><th class="k">Total da nota</th><th class="k">Ganho da operação</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot><tr><td colspan="12" style="text-align:right">TOTAL GERAL</td><td id="tNota"></td><td id="tGanho"></td><td id="tMg" colspan="2"></td></tr></tfoot>
+    </table>
+  </div>
+  <p class="note">Total geral: a última coluna mostra a margem ponderada (ganho ÷ total das notas). Os dados ficam salvos neste navegador.</p>
+</div>
+
+<div class="card">
+  <div class="bar"><b>🔒 Parâmetros</b><span class="note">acesso restrito</span><div class="sp"></div><button id="lock" hidden>Bloquear</button></div>
+  <div id="gate" class="bar" style="margin-top:8px">
+    <input id="pw" type="password" placeholder="Senha" autocomplete="off" style="padding:6px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx)">
+    <button id="unl">Desbloquear</button><span id="err" class="msg"></span>
+  </div>
+  <div id="panel" hidden>
+    <p class="note">Alterações valem só nesta sessão (voltam ao padrão ao recarregar). Para mudar o padrão de forma permanente, fale com o responsável.</p>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+const HASH="1bbaf9dd4842ea44715e151ae3f12d5df35ba709647665260d94a77aec32faac";
+const DEF={red:54.55,rj:22,pis:1.65,cof:7.6,fot:10,fs:0,com:0,bp:12,tx:11,t12:11,t4:22,t0:28,dec:""};
+const LBL={red:"Redução da BC do ICMS (%)",rj:"Alíquota ICMS RJ (%)",pis:"PIS (%)",cof:"COFINS (%)",fot:"FOT (%)",fs:"Custo frete s/ NF saída (%)",com:"Comissão s/ NF saída (%)",bp:"ICMS na base do PIS/COFINS (%)",tx:"TAXA padrão (%)",t12:"TAXA p/ ICMS compra 12% (%)",t4:"TAXA p/ ICMS compra 4% (%)",t0:"TAXA p/ ICMS compra 0% (%)",dec:"Arredondar preço-alvo — padrão p/ todos (casas; vazio = exato)"};
+let P=Object.assign({},DEF), rows=[], KEY="calc-linear-rows";
+try{rows=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){rows=[]}
+const $=id=>document.getElementById(id);
+const num=v=>{const n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n};
+const fm=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const fp=v=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
+const blank=(nf)=>({cod:"",nf:nf||"",ncm:"",fr:"",pr:"",ipi:"",icms:"",mva:"",q:"",dec:""});
+if(!rows.length)rows=[blank()];
+
+function decOf(r){if(r.dec!==undefined&&String(r.dec).trim()!=="")return num(r.dec);return(P.dec===""||P.dec==null)?null:num(P.dec)}
+function calc(r){
+  const prod=num(r.pr),ipi=num(r.ipi)/100,icms=num(r.icms)/100,mva=num(r.mva)/100,q=num(r.q),fr=num(r.fr);
+  const red=P.red/100,rj=P.rj/100,pis=P.pis/100,cof=P.cof/100,fot=P.fot/100,bp=P.bp/100;
+  if(!prod)return null;
+  const tp=prod*(1+ipi),ci=prod*icms,cp=(prod-ci)*pis,cc=(prod-ci)*cof;
+  const key=Math.round(icms*100);
+  const taxa=(key===12?P.t12:key===4?P.t4:key===0?P.t0:P.tx)/100;
+  const vpe=tp*(1+taxa)+fr;
+  const dd=decOf(r),alvo=dd===null?vpe:Math.round(vpe*Math.pow(10,dd))/Math.pow(10,dd);
+  const mk=mva===0?alvo/tp-1:alvo/(tp*(1+red*rj*mva))-1;
+  const pv=tp*(1+mk),deb=pv*red*rj;
+  const bcst=mva===0?0:pv*(1+mva)*red,st=mva===0?0:bcst*rj-deb,vt=pv+st;
+  const g=(1-rj*(1-red))/(1-rj),fo=((pv*g-pv)+(bcst*g-bcst))*fot;
+  const icmsRec=deb-ci,pisRec=(pv-pv*bp)*pis-cp,cofRec=(pv-pv*bp)*cof-cc;
+  const ct=icmsRec+st+fo+pisRec+cofRec,rf=vt-tp-ct;
+  const rop=rf-vt*P.fs/100-vt*P.com/100;
+  return {taxa,vpe,alvo,mk,pv,st,vt,icmsRec,fo,pisRec,cofRec,ct,rf,rop,mg:vt?rop/vt:0,nota:q*vt,ganho:q*rop,tp,ipiV:tp-prod,ci};
+}
+
+const F=[["cod","t"],["nf","t"],["ncm","t"],["fr"],["pr"],["ipi"],["icms"],["mva"],["q"],["dec"]];
+function draw(){
+  const tb=$("rows");tb.innerHTML="";
+  rows.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    F.forEach(([k,t])=>{const td=document.createElement("td"),inp=document.createElement("input");
+      inp.value=r[k]??"";inp.className=t||"";if(!t)inp.inputMode="decimal";
+      inp.addEventListener("input",()=>{r[k]=inp.value;save();upd()});td.appendChild(inp);tr.appendChild(td)});
+    ["pv","vt","mg","nota","ganho"].forEach(k=>{const td=document.createElement("td");td.className="o"+(k==="pv"?"":" k");td.dataset.k=k;td.dataset.i=i;tr.appendChild(td)});
+    const x=document.createElement("td"),b=document.createElement("button");b.textContent="✕";b.title="Remover";
+    b.onclick=()=>{rows.splice(i,1);if(!rows.length)rows.push(blank());save();draw()};x.appendChild(b);tr.appendChild(x);
+    tb.appendChild(tr);
+  });
+  upd();
+}
+function upd(){
+  let tn=0,tg=0;
+  document.querySelectorAll("#rows td.o").forEach(td=>{
+    const c=calc(rows[td.dataset.i]),k=td.dataset.k;
+    if(!c){td.textContent="";return}
+    const v=c[k];td.textContent=k==="mg"?fp(v):fm(v);td.classList.toggle("neg",v<0);
+  });
+  rows.forEach(r=>{const c=calc(r);if(c){tn+=c.nota;tg+=c.ganho}});
+  $("tNota").textContent=fm(tn);$("tGanho").textContent=fm(tg);$("tMg").textContent=tn?"Margem: "+fp(tg/tn):"";
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(rows))}catch(e){}}
+
+$("add").onclick=()=>{const l=rows[rows.length-1];rows.push(blank(l?l.nf:""));save();draw();const ins=document.querySelectorAll("#rows tr:last-child input");if(ins[0])ins[0].focus()};
+$("clr").onclick=()=>{if(confirm("Apagar todos os produtos?")){rows=[blank()];save();draw()}};
+
+/* ---- download .xlsx ---- */
+$("dl").onclick=async()=>{
+  const list=rows.map(r=>({r,c:calc(r)})).filter(x=>x.c);
+  if(!list.length){alert("Preencha ao menos um produto (valor do produto).");return}
+  const H=["Código","NF","NCM","Frete (R$/un.)","Valor do produto","IPI","ICMS compra","MVA original","Quant.","TAXA","Valor pra encontrar","Markup calculado","Preço de venda","ICMS ST","Valor total venda","ICMS a recolher","FOT a recolher","PIS a recolher","COFINS a recolher","Custo tributário","Resultado financeiro","Resultado operacional","Margem de contribuição","Total da nota","Ganho da operação","Arredondamento (casas)"];
+  const Z=[0,0,0,"R$",0,"0.00%","0.00%","0.00%","0.00","0.00%","R$","0.00%","R$","R$","R$","R$","R$","R$","R$","R$","R$","R$","0.00%","R$","R$",0];
+  const money='"R$" #,##0.00';
+  const data=[H].concat(list.map(({r,c})=>[r.cod,r.nf,r.ncm,num(r.fr),num(r.pr),num(r.ipi)/100,num(r.icms)/100,num(r.mva)/100,num(r.q),c.taxa,c.vpe,c.mk,c.pv,c.st,c.vt,c.icmsRec,c.fo,c.pisRec,c.cofRec,c.ct,c.rf,c.rop,c.mg,c.nota,c.ganho,decOf(r)===null?"exato":decOf(r)]));
+  const n=data.length;
+  const tot=new Array(H.length).fill("");tot[0]="TOTAL";
+  tot[23]=list.reduce((s,x)=>s+x.c.nota,0);tot[24]=list.reduce((s,x)=>s+x.c.ganho,0);tot[22]=tot[23]?tot[24]/tot[23]:0;
+  data.push(tot);
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  for(let R=1;R<=n;R++)for(let C=3;C<H.length;C++){
+    const a=XLSX.utils.encode_cell({r:R,c:C}),cell=ws[a];if(!cell||typeof cell.v!=="number")continue;
+    cell.z=Z[C]==="R$"?money:Z[C];
+  }
+  ws["!cols"]=H.map((h,i)=>({wch:i<3?12:Math.max(14,h.length+2)}));
+  const wp=XLSX.utils.aoa_to_sheet([["Parâmetro","Valor"]].concat(Object.keys(LBL).map(k=>[LBL[k],P[k]===""?"exato":P[k]])));
+  wp["!cols"]=[{wch:46},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Produtos calculados");XLSX.utils.book_append_sheet(wb,wp,"Parâmetros usados");
+  const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  const d=new Date(),stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const dls=window.claude&&await window.claude.use("downloads");
+  if(!dls){alert("Download indisponível nesta visualização. Abra o link da calculadora no Claude para baixar.");return}
+  try{await dls.save({filename:"calculadora-linear-"+stamp+".xlsx",data:buf})}catch(e){if(!e||e.code!=="declined")alert("Não foi possível salvar o arquivo.")}
+};
+
+/* ---- parâmetros com senha ---- */
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+function showPanel(on){$("gate").hidden=on;$("panel").hidden=!on;$("lock").hidden=!on;if(on){
+  const g=$("pgrid");g.innerHTML="";
+  Object.keys(LBL).forEach(k=>{const l=document.createElement("label");l.textContent=LBL[k];const i=document.createElement("input");i.value=P[k];i.inputMode="decimal";
+    i.oninput=()=>{P[k]=k==="dec"&&i.value.trim()===""?"":i.value===""?0:num(i.value);upd()};l.appendChild(i);g.appendChild(l)})}}
+$("unl").onclick=async()=>{
+  try{if(await sha("linear-calc:"+$("pw").value)===HASH){$("err").textContent="";$("pw").value="";showPanel(true)}else $("err").textContent="Senha incorreta."}
+  catch(e){$("err").textContent="Não foi possível validar a senha neste navegador."}
+};
+$("pw").addEventListener("keydown",e=>{if(e.key==="Enter")$("unl").click()});
+$("lock").onclick=()=>showPanel(false);
+draw();
+})();
+</script>
+</body>
+</html>
