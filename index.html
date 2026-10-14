@@ -25,18 +25,22 @@ th{font-size:12px;padding:6px 4px;text-align:center;color:var(--tx)}
 th.i{background:var(--in);border-bottom:2px solid var(--inb)}th.o{background:var(--out)}th.k{background:var(--key);color:#fff}
 td.o{background:var(--out);padding:3px 8px}td.k{font-weight:700}
 td input{width:100%;min-width:60px;box-sizing:border-box;border:1px solid transparent;background:var(--in);color:var(--tx);padding:5px;font:inherit;border-radius:4px;text-align:right}
-td input.t{text-align:left}td input:focus{outline:2px solid var(--key)}
+td input.t{text-align:left}td input.sug{font-style:italic;color:var(--key);border-color:var(--key)}td input:focus{outline:2px solid var(--key)}
 tfoot td{font-weight:700;background:var(--out)}
 .neg{color:var(--bad)}.leg span{display:inline-block;padding:2px 8px;border-radius:5px;margin-right:6px;font-size:12px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:10px}
 .pgrid label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
 .pgrid input{padding:6px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx);font:inherit}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button.on{background:var(--key);border-color:var(--key);color:#fff;font-weight:600}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.two table{min-width:0}.big{font-size:18px;font-weight:700}.kpi{display:flex;flex-wrap:wrap;gap:12px}.kpi div{flex:1;min-width:170px;background:var(--out);border-radius:8px;padding:10px}.kpi small{display:block;color:var(--mut)}
 .msg{color:var(--bad);font-size:12px}.note{color:var(--mut);font-size:12px}
 </style>
 </head>
 <body>
 <main>
 <h1>Calculadora Linear</h1>
+<div class="tabs"><button id="tbP" class="on">Cálculo de preço</button><button id="tbF">Cálculo de frete</button></div>
+<section id="tabPreco">
 <p class="sub">Preencha as colunas amarelas. O resto é calculado automaticamente.</p>
 
 <div class="card">
@@ -50,8 +54,8 @@ tfoot td{font-weight:700;background:var(--out)}
   <div class="wrap" style="margin-top:10px">
     <table>
       <thead><tr>
-        <th class="i">Código</th><th class="i">NF</th><th class="i">NCM</th><th class="i">Frete (R$/un.)</th><th class="i">Valor do produto (R$)</th>
-        <th class="i">IPI %</th><th class="i">ICMS compra %</th><th class="i">MVA original %</th><th class="i">Quant.</th><th class="i" title="Opcional. Vazio = usa o padrão dos Parâmetros (exato)">Arredondar casas (opcional)</th>
+        <th class="i">Código</th><th class="i">NF</th><th class="i">NCM</th><th class="i">Valor do produto (R$)</th>
+        <th class="i">IPI %</th><th class="i">ICMS compra %</th><th class="i">MVA original %</th><th class="i" title="Se a NF bater com uma NF do Cálculo de frete, sugere (produto + IPI) × % de frete inteira">Frete (R$/un.)</th><th class="i">Quant.</th><th class="i" title="Opcional. Vazio = usa o padrão dos Parâmetros (exato)">Arredondar casas (opcional)</th>
         <th class="k">Preço de venda</th><th class="k">Valor total venda</th><th class="k">Margem contrib.</th><th class="k">Total da nota</th><th class="k">Ganho da operação</th><th></th>
       </tr></thead>
       <tbody id="rows"></tbody>
@@ -72,6 +76,24 @@ tfoot td{font-weight:700;background:var(--out)}
     <div class="pgrid" id="pgrid"></div>
   </div>
 </div>
+</section>
+
+<section id="tabFrete" hidden>
+<p class="sub">Rateia o valor total dos fretes entre as notas, proporcionalmente ao valor de cada NF.</p>
+<div class="two">
+  <div class="card"><div class="bar"><b>Valor do frete</b><div class="sp"></div><button id="frAdd">+ Frete</button></div>
+    <table style="margin-top:8px"><thead><tr><th class="i">Valor do frete (R$)</th><th></th></tr></thead><tbody id="frL"></tbody></table></div>
+  <div class="card"><div class="bar"><b>Notas fiscais</b><div class="sp"></div><button id="ntAdd">+ NF</button></div>
+    <table style="margin-top:8px"><thead><tr><th class="i">NF (nº, opcional)</th><th class="i">Valor total da nota (R$)</th><th></th></tr></thead><tbody id="ntL"></tbody></table></div>
+</div>
+<div class="card">
+  <div class="kpi"><div><small>Soma dos fretes</small><span class="big" id="sF"></span></div><div><small>Soma das NFs</small><span class="big" id="sN"></span></div><div><small>Frete ÷ NF</small><span class="big" id="rt"></span></div></div>
+  <div class="bar" style="margin:12px 0 8px"><b>Frete por NF</b><div class="sp"></div><button id="frClr">Limpar</button><button id="frDl" class="pri">Baixar planilha (.xlsx)</button></div>
+  <div class="wrap"><table style="min-width:0"><thead><tr><th class="k">NF</th><th class="k">Valor da nota</th><th class="k">% da soma das NFs</th><th class="k">Frete da NF</th></tr></thead><tbody id="rzL"></tbody>
+  <tfoot><tr><td>TOTAL</td><td id="zN"></td><td id="zP"></td><td id="zF"></td></tr></tfoot></table></div>
+  <p class="note">Frete da NF = (soma dos fretes ÷ soma das NFs) × valor da nota. Sem limite de quantidade de fretes ou NFs.</p>
+</div>
+</section>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -83,15 +105,49 @@ const LBL={red:"Redução da BC do ICMS (%)",rj:"Alíquota ICMS RJ (%)",pis:"PIS
 let P=Object.assign({},DEF), rows=[], KEY="calc-linear-rows";
 try{rows=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){rows=[]}
 const $=id=>document.getElementById(id);
-const num=v=>{const n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n};
+const num=v=>{
+  let s=String(v??"").replace(/R\$|%|\s|\u00a0/gi,"").replace(/[^\d.,\-]/g,"");
+  const neg=s.startsWith("-");s=s.replace(/-/g,"");
+  const lc=s.lastIndexOf(","),ld=s.lastIndexOf(".");
+  if(lc>-1&&ld>-1){s=lc>ld?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"")}
+  else if(lc>-1){s=(s.match(/,/g).length>1)?s.replace(/,/g,""):s.replace(",",".")}
+  else if(ld>-1&&s.match(/\./g).length>1){s=s.replace(/\./g,"")}
+  const n=parseFloat(s);return isNaN(n)?0:(neg?-n:n);
+};
+/* colar: limpa R$, %, espaços e separador de milhar */
+function cleanPaste(t){
+  t=String(t).split(/\r?\n/)[0].trim();if(!/\d/.test(t))return null;
+  if(/R\$/i.test(t)&&/^[^\d]*\d{1,3}\.\d{3}[^\d.,]*$/.test(t))t=t.replace(".","");
+  const n=num(t);return String(n).replace(".",",");
+}
+document.addEventListener("paste",e=>{
+  const t=e.target;if(!(t instanceof HTMLInputElement)||t.inputMode!=="decimal")return;
+  const txt=(e.clipboardData||window.clipboardData).getData("text"),c=cleanPaste(txt);if(c===null)return;
+  e.preventDefault();t.setRangeText(c,t.selectionStart,t.selectionEnd,"end");t.dispatchEvent(new Event("input",{bubbles:true}));
+});
 const fm=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const fp=v=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
 const blank=(nf)=>({cod:"",nf:nf||"",ncm:"",fr:"",pr:"",ipi:"",icms:"",mva:"",q:"",dec:""});
 if(!rows.length)rows=[blank()];
 
+async function saveBuf(buf,name){
+  let dls=null;try{dls=window.claude?await window.claude.use("downloads"):null}catch(e){}
+  if(dls){try{await dls.save({filename:name,data:buf})}catch(e){if(!e||e.code!=="declined")alert("Não foi possível salvar o arquivo.")}return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+const nfKey=x=>String(x??"").trim().toLowerCase().replace(/^0+/,"");
+function frSug(r){
+  const k=nfKey(r.nf),prod=num(r.pr);if(!k||!prod)return null;
+  if(!NT.some(x=>nfKey(x.n)===k))return null;
+  const {rate}=calcF();if(rate<=0)return null;
+  const pct=Math.round(rate*100),tp=prod*(1+num(r.ipi)/100);
+  return {pct,rate,val:Math.round(tp*pct)/100};
+}
+function frEff(r){if(String(r.fr??"").trim()!=="")return num(r.fr);const s=frSug(r);return s?s.val:0}
 function decOf(r){if(r.dec!==undefined&&String(r.dec).trim()!=="")return num(r.dec);return(P.dec===""||P.dec==null)?null:num(P.dec)}
 function calc(r){
-  const prod=num(r.pr),ipi=num(r.ipi)/100,icms=num(r.icms)/100,mva=num(r.mva)/100,q=num(r.q),fr=num(r.fr);
+  const prod=num(r.pr),ipi=num(r.ipi)/100,icms=num(r.icms)/100,mva=num(r.mva)/100,q=num(r.q),fr=frEff(r);
   const red=P.red/100,rj=P.rj/100,pis=P.pis/100,cof=P.cof/100,fot=P.fot/100,bp=P.bp/100;
   if(!prod)return null;
   const tp=prod*(1+ipi),ci=prod*icms,cp=(prod-ci)*pis,cc=(prod-ci)*cof;
@@ -109,14 +165,17 @@ function calc(r){
   return {taxa,vpe,alvo,mk,pv,st,vt,icmsRec,fo,pisRec,cofRec,ct,rf,rop,mg:vt?rop/vt:0,nota:q*vt,ganho:q*rop,tp,ipiV:tp-prod,ci};
 }
 
-const F=[["cod","t"],["nf","t"],["ncm","t"],["fr"],["pr"],["ipi"],["icms"],["mva"],["q"],["dec"]];
+const F=[["cod","t"],["nf","t"],["ncm","t"],["pr"],["ipi"],["icms"],["mva"],["fr"],["q"],["dec"]];
+let frInp=[];
 function draw(){
-  const tb=$("rows");tb.innerHTML="";
+  const tb=$("rows");tb.innerHTML="";frInp=[];
   rows.forEach((r,i)=>{
     const tr=document.createElement("tr");
     F.forEach(([k,t])=>{const td=document.createElement("td"),inp=document.createElement("input");
       inp.value=r[k]??"";inp.className=t||"";if(!t)inp.inputMode="decimal";
-      inp.addEventListener("input",()=>{r[k]=inp.value;save();upd()});td.appendChild(inp);tr.appendChild(td)});
+      inp.addEventListener("input",()=>{r[k]=inp.value;save();upd()});
+      if(k==="fr"){frInp[i]=inp;inp.addEventListener("focus",()=>{if(inp.classList.contains("sug"))inp.select()})}
+      td.appendChild(inp);tr.appendChild(td)});
     ["pv","vt","mg","nota","ganho"].forEach(k=>{const td=document.createElement("td");td.className="o"+(k==="pv"?"":" k");td.dataset.k=k;td.dataset.i=i;tr.appendChild(td)});
     const x=document.createElement("td"),b=document.createElement("button");b.textContent="✕";b.title="Remover";
     b.onclick=()=>{rows.splice(i,1);if(!rows.length)rows.push(blank());save();draw()};x.appendChild(b);tr.appendChild(x);
@@ -126,6 +185,13 @@ function draw(){
 }
 function upd(){
   let tn=0,tg=0;
+  rows.forEach((r,i)=>{const el=frInp[i];if(!el)return;
+    const s=String(r.fr??"").trim()===""?frSug(r):null;
+    if(s){const t=s.val.toFixed(2).replace(".",",");el.classList.add("sug");
+      el.title="Sugerido: (produto + IPI) × "+s.pct+"% (frete da NF = "+f4(s.rate)+"). Digite para substituir.";
+      if(el.value!==t){el.value=t;if(document.activeElement===el)el.select()}}
+    else{if(el.classList.contains("sug")&&String(r.fr??"").trim()===""){el.value=""}el.classList.remove("sug");el.title=""}
+  });
   document.querySelectorAll("#rows td.o").forEach(td=>{
     const c=calc(rows[td.dataset.i]),k=td.dataset.k;
     if(!c){td.textContent="";return}
@@ -146,7 +212,7 @@ $("dl").onclick=async()=>{
   const H=["Código","NF","NCM","Frete (R$/un.)","Valor do produto","IPI","ICMS compra","MVA original","Quant.","TAXA","Valor pra encontrar","Markup calculado","Preço de venda","ICMS ST","Valor total venda","ICMS a recolher","FOT a recolher","PIS a recolher","COFINS a recolher","Custo tributário","Resultado financeiro","Resultado operacional","Margem de contribuição","Total da nota","Ganho da operação","Arredondamento (casas)"];
   const Z=[0,0,0,"R$",0,"0.00%","0.00%","0.00%","0.00","0.00%","R$","0.00%","R$","R$","R$","R$","R$","R$","R$","R$","R$","R$","0.00%","R$","R$",0];
   const money='"R$" #,##0.00';
-  const data=[H].concat(list.map(({r,c})=>[r.cod,r.nf,r.ncm,num(r.fr),num(r.pr),num(r.ipi)/100,num(r.icms)/100,num(r.mva)/100,num(r.q),c.taxa,c.vpe,c.mk,c.pv,c.st,c.vt,c.icmsRec,c.fo,c.pisRec,c.cofRec,c.ct,c.rf,c.rop,c.mg,c.nota,c.ganho,decOf(r)===null?"exato":decOf(r)]));
+  const data=[H].concat(list.map(({r,c})=>[r.cod,r.nf,r.ncm,frEff(r),num(r.pr),num(r.ipi)/100,num(r.icms)/100,num(r.mva)/100,num(r.q),c.taxa,c.vpe,c.mk,c.pv,c.st,c.vt,c.icmsRec,c.fo,c.pisRec,c.cofRec,c.ct,c.rf,c.rop,c.mg,c.nota,c.ganho,decOf(r)===null?"exato":decOf(r)]));
   const n=data.length;
   const tot=new Array(H.length).fill("");tot[0]="TOTAL";
   tot[23]=list.reduce((s,x)=>s+x.c.nota,0);tot[24]=list.reduce((s,x)=>s+x.c.ganho,0);tot[22]=tot[23]?tot[24]/tot[23]:0;
@@ -162,9 +228,7 @@ $("dl").onclick=async()=>{
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Produtos calculados");XLSX.utils.book_append_sheet(wb,wp,"Parâmetros usados");
   const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});
   const d=new Date(),stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const dls=window.claude&&await window.claude.use("downloads");
-  if(!dls){alert("Download indisponível nesta visualização. Abra o link da calculadora no Claude para baixar.");return}
-  try{await dls.save({filename:"calculadora-linear-"+stamp+".xlsx",data:buf})}catch(e){if(!e||e.code!=="declined")alert("Não foi possível salvar o arquivo.")}
+  await saveBuf(buf,"calculadora-linear-"+stamp+".xlsx");
 };
 
 /* ---- parâmetros com senha ---- */
@@ -179,6 +243,53 @@ $("unl").onclick=async()=>{
 };
 $("pw").addEventListener("keydown",e=>{if(e.key==="Enter")$("unl").click()});
 $("lock").onclick=()=>showPanel(false);
+
+/* ---- abas ---- */
+function tab(f){$("tabPreco").hidden=f;$("tabFrete").hidden=!f;$("tbP").classList.toggle("on",!f);$("tbF").classList.toggle("on",f)}
+$("tbP").onclick=()=>tab(false);$("tbF").onclick=()=>tab(true);
+
+/* ---- cálculo de frete ---- */
+let FR=[""],NT=[{n:"",v:""}];const K2="calc-linear-frete";
+try{const d=JSON.parse(localStorage.getItem(K2)||"null");if(d&&d.fr&&d.nt&&d.fr.length&&d.nt.length){FR=d.fr;NT=d.nt}}catch(e){}
+const sv2=()=>{try{localStorage.setItem(K2,JSON.stringify({fr:FR,nt:NT}))}catch(e){}};
+function cell(tr,val,cls,cb,ph){const td=document.createElement("td"),i=document.createElement("input");i.value=val??"";i.className=cls;i.placeholder=ph||"";if(!cls)i.inputMode="decimal";
+  i.addEventListener("input",()=>{cb(i.value);sv2();updF()});td.appendChild(i);tr.appendChild(td)}
+function del(tr,fn){const td=document.createElement("td"),b=document.createElement("button");b.textContent="✕";b.title="Remover";b.onclick=fn;td.appendChild(b);tr.appendChild(td)}
+function drawF(){
+  const a=$("frL");a.innerHTML="";
+  FR.forEach((v,i)=>{const tr=document.createElement("tr");cell(tr,v,"",x=>FR[i]=x,"0,00");del(tr,()=>{FR.splice(i,1);if(!FR.length)FR.push("");sv2();drawF()});a.appendChild(tr)});
+  const n=$("ntL");n.innerHTML="";
+  NT.forEach((r,i)=>{const tr=document.createElement("tr");cell(tr,r.n,"t",x=>r.n=x,"nº da NF");cell(tr,r.v,"",x=>r.v=x,"0,00");del(tr,()=>{NT.splice(i,1);if(!NT.length)NT.push({n:"",v:""});sv2();drawF()});n.appendChild(tr)});
+  updF();
+}
+function calcF(){const sf=FR.reduce((s,x)=>s+num(x),0),sn=NT.reduce((s,r)=>s+num(r.v),0);return{sf,sn,rate:sn?sf/sn:0}}
+const f4=v=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:4})+"%";
+function updF(){
+  const {sf,sn,rate}=calcF();$("sF").textContent=fm(sf);$("sN").textContent=fm(sn);$("rt").textContent=f4(rate);
+  const b=$("rzL");b.innerHTML="";
+  NT.forEach((r,i)=>{if(r.v===""&&r.n==="")return;const v=num(r.v),tr=document.createElement("tr");
+    [r.n||"NF "+(i+1),fm(v),sn?f4(v/sn):"",fm(rate*v)].forEach((t,j)=>{const td=document.createElement("td");td.className="o"+(j===3?" k":"");td.textContent=t;if(j===0)td.style.textAlign="left";tr.appendChild(td)});b.appendChild(tr)});
+  upd();
+  $("zN").textContent=fm(sn);$("zP").textContent=sn?f4(1):"";$("zF").textContent=fm(sn?sf:0);
+}
+$("frAdd").onclick=()=>{FR.push("");sv2();drawF()};
+$("ntAdd").onclick=()=>{NT.push({n:"",v:""});sv2();drawF()};
+$("frClr").onclick=()=>{if(confirm("Limpar fretes e notas?")){FR=[""];NT=[{n:"",v:""}];sv2();drawF()}};
+$("frDl").onclick=async()=>{
+  const {sf,sn,rate}=calcF(),nts=NT.map((r,i)=>({n:r.n||"NF "+(i+1),v:num(r.v)})).filter((x,i)=>NT[i].v!==""||NT[i].n!=="");
+  if(!nts.length||!sn){alert("Informe ao menos uma NF com valor.");return}
+  const money='"R$" #,##0.00',aoa=[["NF","Valor da nota","% da soma das NFs","Frete da NF"]].concat(nts.map(x=>[x.n,x.v,x.v/sn,rate*x.v]));
+  aoa.push(["TOTAL",sn,1,sf],[],["Soma dos fretes",sf],["Soma das NFs",sn],["Frete ÷ NF",rate]);
+  const ws=XLSX.utils.aoa_to_sheet(aoa),L=nts.length+1;
+  for(let R=1;R<=L;R++)[[1,money],[2,"0.0000%"],[3,money]].forEach(([c,z])=>{const x=ws[XLSX.utils.encode_cell({r:R,c})];if(x)x.z=z});
+  [[L+2,1],[L+3,1]].forEach(([r,c])=>{ws[XLSX.utils.encode_cell({r,c})].z=money});ws[XLSX.utils.encode_cell({r:L+4,c:1})].z="0.0000%";
+  ws["!cols"]=[{wch:20},{wch:16},{wch:20},{wch:16}];
+  const wf=XLSX.utils.aoa_to_sheet([["Valor do frete"]].concat(FR.filter(x=>x!=="").map(x=>[num(x)])));wf["!cols"]=[{wch:18}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Frete por NF");XLSX.utils.book_append_sheet(wb,wf,"Fretes");
+  const d=new Date(),st=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  await saveBuf(XLSX.write(wb,{bookType:"xlsx",type:"array"}),"frete-por-nf-"+st+".xlsx");
+};
+drawF();
 draw();
 })();
 </script>
